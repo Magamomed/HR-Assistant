@@ -1,0 +1,61 @@
+{% extends "home/base.html" %}
+{% block title %}Вакансии{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Вакансии</h2>
+
+<!-- Фильтр и кнопка добавления -->
+<div class="d-flex justify-content-between mb-3">
+    <div class="d-flex align-items-center">
+        <form method="GET" class="d-flex">
+            <input type="text" name="search" class="form-control me-2" placeholder="Поиск">
+            <select name="status" class="form-select w-auto" onchange="this.form.submit()">
+                <option value="all">Все статусы</option>
+                <option value="open">Открытые</option>
+                <option value="closed">Закрытые</option>
+            </select>
+        </form>
+        
+        <a href="{% url 'add_vacancy' %}" class="btn text-white ms-2"
+           style="background-color: #2D6490; border-color: #2D6490;">
+            Добавить вакансию +
+        </a>
+    </div>
+</div>
+
+
+<!-- Таблица вакансий -->
+<table class="table">
+    <thead>
+        <tr>
+            <th>№</th>
+            <th>Название</th>
+            <th>Требования</th>
+            <th>Статус</th>
+            <th>Дата</th>
+            <th>Действия</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for vacancy in vacancies %}
+        <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ vacancy.title }}</td>
+            <td>{{ vacancy.skills }}</td>
+            <td>
+                {% if vacancy.status == "open" %}
+                    <span class="badge bg-success">Открыта</span>
+                {% else %}
+                    <span class="badge bg-danger">Закрыта</span>
+                {% endif %}
+            </td>
+            <td>{{ vacancy.created_at }}</td>
+            <td>
+                <a href="{% url 'edit_vacancy' vacancy.id %}" class="btn btn-sm btn-warning">✏</a>
+                <a href="{% url 'delete_vacancy' vacancy.id %}" class="btn btn-sm btn-danger">🗑</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

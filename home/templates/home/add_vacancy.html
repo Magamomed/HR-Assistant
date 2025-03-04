@@ -1,0 +1,97 @@
+{% extends "home/base.html" %}
+{% block title %}Добавление вакансии{% endblock %}
+
+{% block content %}
+<a href="{% url 'vacancy_list' %}" class="d-flex align-items-center text-dark fw-normal" style="text-decoration: none;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-left me-2" viewBox="0 0 16 16">
+        <path fill-rule="evenodd" d="M15 8a.5.5 0 0 1-.5.5H2.707l3.147 3.146a.5.5 0 1 1-.708.708l-4-4a.5.5 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 7.5H14.5A.5.5 0 0 1 15 8"/>
+    </svg>
+    <span>Вернуться назад</span>
+</a>
+
+<h2 class="mb-3">Добавить вакансию</h2>
+
+<form method="POST" onsubmit="prepareSkills()">
+    {% csrf_token %}
+    
+    <div class="mb-3">
+        <label>Название вакансии:</label>
+        {{ form.title }}
+    </div>
+    
+    <div class="mb-3">
+        <label>Описание вакансии:</label>
+        {{ form.description }}
+    </div>
+    
+    <div class="mb-3">
+        <label>Навыки:</label>
+        <input type="text" id="skill-input" class="form-control" placeholder="Введите навык">
+        <button type="button" class="btn btn-secondary mt-2" onclick="addSkill()">+</button>
+        <div id="skills-container" class="mt-2"></div>
+    </div>
+
+    <!-- Скрытое поле для передачи навыков в форму -->
+    <input type="hidden" name="skills" id="hidden-skills" value="{{ form.instance.skills }}">
+
+    <div class="mb-3">
+        <label>Опыт работы (в месяцах):</label>
+        {{ form.experience }}
+    </div>
+
+    <div class="mb-3">
+        <label>Статус вакансии:</label>
+        {{ form.status }}
+    </div>
+
+    <button type="submit" class="btn btn-success">Сохранить вакансию</button>
+</form>
+
+<script>
+    let skillsArray = [];
+
+    function addSkill() {
+        let skillInput = document.getElementById("skill-input");
+        let skillValue = skillInput.value.trim();
+
+        if (skillValue !== "" && !skillsArray.includes(skillValue)) {
+            skillsArray.push(skillValue);
+            updateSkillsDisplay();
+            skillInput.value = "";
+        }
+    }
+
+    function updateSkillsDisplay() {
+        let skillContainer = document.getElementById("skills-container");
+        skillContainer.innerHTML = "";  // Очищаем контейнер перед обновлением
+
+        skillsArray.forEach((skill, index) => {
+            let newSkill = document.createElement("span");
+            newSkill.classList.add("badge", "bg-secondary", "me-2");
+            newSkill.innerHTML = `${skill} <button type="button" onclick="removeSkill(${index})" class="btn-close btn-sm"></button>`;
+            skillContainer.appendChild(newSkill);
+        });
+
+        // Записываем список навыков в скрытое поле
+        document.getElementById("hidden-skills").value = skillsArray.join(",");
+    }
+
+    function removeSkill(index) {
+        skillsArray.splice(index, 1);
+        updateSkillsDisplay();
+    }
+
+    function prepareSkills() {
+        document.getElementById("hidden-skills").value = skillsArray.join(",");
+    }
+
+    // 🟢 Автоматически загружаем навыки при редактировании
+    window.onload = function () {
+        let existingSkills = "{{ form.instance.skills|default_if_none:'' }}";
+        if (existingSkills) {
+            skillsArray = existingSkills.split(",").map(skill => skill.trim());
+            updateSkillsDisplay();
+        }
+    };
+</script>
+{% endblock %}
