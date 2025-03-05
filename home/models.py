@@ -20,11 +20,14 @@ class CandidateResume(models.Model):
     vacancy = models.ForeignKey(Vacancy, on_delete=models.CASCADE)
     resume = models.FileField(upload_to="resumes/")
     match_percentage = models.FloatField(default=0)
+    skills = models.TextField(blank=True, null=True)  # 🔍 Извлеченные навыки
+    missing_skills = models.TextField(blank=True, null=True)  # ❌ Недостающие навыки
     status = models.CharField(
-        max_length=10,
-        choices=[("pending", "Ожидание"), ("accepted", "Принят"), ("rejected", "Отклонен")],
+        max_length=15,
+        choices=[("pending", "Ожидание"), ("interview", "На интервью"), ("accepted", "Принят"), ("rejected", "Отклонен")],
         default="pending",
     )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"Резюме на {self.vacancy.title} - {self.match_percentage}%"

@@ -1,0 +1,31 @@
+{% extends "home/base.html" %}
+
+{% block title %}Кандидаты{% endblock %}
+
+{% block content %}
+<h2 class="mb-3">Кандидаты</h2>
+<a href="{% url 'candidates_list' %}" class="btn btn-link"><i class="fas fa-arrow-left"></i> Вернуться назад</a>
+
+<div class="mt-3">
+    <h3>Информация о кандидате</h3>
+    <p><strong>Имя кандидата:</strong> {{ candidate.name }}</p>
+    <p><strong>Вакансия:</strong> {{ candidate.vacancy.title }}</p>
+    <p><strong>Процент совпадения:</strong> {{ candidate.match_percentage }}%</p>
+    <p><strong>Дата загрузки:</strong> {{ candidate.upload_date|date:"d.m.Y" }}</p>
+</div>
+
+<div class="mt-4">
+    <h4>Анализ навыков</h4>
+    <p><strong>Подходящие навыки:</strong> {{ candidate.matched_skills|join:", " }}</p>
+    <p><strong>Недостающие навыки:</strong> {{ candidate.missing_skills|join:", " }}</p>
+</div>
+
+{% if candidate.status == "pending" %}
+    <a href="{% url 'invite_to_interview' candidate.id %}" class="btn btn-primary">Пригласить на интервью</a>
+    <a href="{% url 'reject_candidate' candidate.id %}" class="btn btn-danger">Отклонить</a>
+{% elif candidate.status == "interview" %}
+    <a href="{% url 'accept_candidate' candidate.id %}" class="btn btn-success">Принять</a>
+    <a href="{% url 'reject_candidate' candidate.id %}" class="btn btn-danger">Отклонить</a>
+{% endif %}
+
+{% endblock %}
