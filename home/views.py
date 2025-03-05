@@ -69,6 +69,10 @@ def delete_vacancy(request, pk):
     return redirect("vacancy_list")
 
 
+from django.shortcuts import render, redirect
+from .forms import ResumeForm
+from .models import CandidateResume, Vacancy
+from .utils import analyze_resume, extract_text_from_resume
 
 def upload_resume(request):
     form = ResumeForm(request.POST or None, request.FILES or None)
