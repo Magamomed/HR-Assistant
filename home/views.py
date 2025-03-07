@@ -84,10 +84,6 @@ def delete_vacancy(request, pk):
     return redirect("vacancy_list")
 
 
-from django.shortcuts import render, redirect
-from .forms import ResumeForm
-from .models import CandidateResume, Vacancy
-from .utils import analyze_resume, extract_text_from_resume
 
 def upload_resume(request):
     form = ResumeForm(request.POST or None, request.FILES or None)
@@ -109,33 +105,23 @@ def upload_resume(request):
         print(f"📄 Извлеченный текст из резюме:\n{resume_text}")
 
         # 🔍 Проверяем описание вакансии
-        print(f"📋 Описание вакансии:\n{vacancy.description}")
+        vacancy_text = vacancy.description
+        print(f"📋 Описание вакансии:\n{vacancy_text}")
 
-        # 🔍 Извлекаем навыки из резюме и вакансии
-        candidate_skills = extract_keywords(resume_text)
-        vacancy_skills = extract_keywords(vacancy.description)
+        # 🛠 Анализируем совпадение через BERT
+        match_percentage, matching_skills, missing_skills = analyze_resume(resume_text, vacancy_text)
 
-        # 🛠 Вычисляем совпадения навыков
-        matching_skills = candidate_skills.intersection(vacancy_skills)
-        missing_skills = vacancy_skills - candidate_skills
+        print(f"✅ Совпадение (BERT): {match_percentage}%")
 
-        # 💾 Сохраняем навыки кандидата
-        resume.skills = ", ".join(candidate_skills)
-        resume.missing_skills = ", ".join(missing_skills)
-        resume.save()
-
-        # 🔍 Анализируем процент совпадения
-        match_percentage = analyze_resume(resume_text, vacancy.description)
-        print(f"✅ Совпадение: {match_percentage}%")
-
-        # 💾 Сохраняем процент совпадения
-        resume.match_percentage = match_percentage
+        # 💾 Сохраняем процент совпадения и навыки
+        resume.match_percentage = round(match_percentage, 2)
+        resume.skills = ", ".join(matching_skills)
+        resume.missing_skills = ", ".join(list(missing_skills))
         resume.save()
 
         return redirect("candidates_list")
 
     return render(request, "home/upload_resume.html", {"form": form, "resume": resume, "vacancies": vacancies})
-
 
 def candidates_list(request):
     candidates = CandidateResume.objects.all()

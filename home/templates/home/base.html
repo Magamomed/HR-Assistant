@@ -5,16 +5,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}HRMatch{% endblock %}</title>
+
+    <!-- Подключаем шрифт Montserrat -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Подключаем Bootstrap -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
     <style>
         :root {
             --sidebar-width: 16rem;
             --content-padding: 2rem;
         }
 
+        /* Применяем Montserrat глобально */
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 400; /* Обычный вес */
         }
 
         .sidebar {
@@ -34,6 +42,7 @@
             text-decoration: none;
             padding: 0.8em 1.5em;
             font-size: 1rem;
+            font-weight: 500; /* Средний вес */
         }
 
         .sidebar a:hover {
@@ -49,18 +58,24 @@
         .table th, .table td {
             font-size: 1rem;
             padding: 0.8em;
+            font-weight: 400;
         }
 
         .badge {
             font-size: 0.9rem;
             padding: 0.5em 1em;
             border-radius: 0.5em;
+            font-weight: 600; /* Чуть жирнее */
         }
 
         img.logo {
             max-width: 9rem;
             height: auto;
             margin-bottom: 1.5em;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-weight: 700; /* Заголовки жирнее */
         }
     </style>
 </head>

@@ -2,11 +2,13 @@ import re
 import nltk
 import pdfplumber
 import docx
-from sklearn.feature_extraction.text import TfidfVectorizer
 from nltk.tokenize import word_tokenize
+from sklearn.feature_extraction.text import TfidfVectorizer
+from home.ml_utils import get_similarity  # Импортируем ML-анализ
 
-# Загружаем необходимые данные для nltk
+# Загружаем необходимые данные
 nltk.download("punkt")
+nltk.download("stopwords")
 
 def extract_text_from_resume(file_path):
     """Извлекает текст из резюме в формате PDF или DOCX."""
@@ -16,9 +18,11 @@ def extract_text_from_resume(file_path):
         try:
             with pdfplumber.open(file_path) as pdf:
                 for page in pdf.pages:
-                    text += page.extract_text() + "\n"
+                    extracted_text = page.extract_text()
+                    if extracted_text:
+                        text += extracted_text + "\n"
         except Exception as e:
-            print(f"Ошибка при извлечении текста из PDF: {e}")
+            print(f"❌ Ошибка при извлечении текста из PDF: {e}")
 
     elif file_path.endswith(".docx"):
         try:
@@ -26,74 +30,59 @@ def extract_text_from_resume(file_path):
             for para in doc.paragraphs:
                 text += para.text + "\n"
         except Exception as e:
-            print(f"Ошибка при извлечении текста из DOCX: {e}")
+            print(f"❌ Ошибка при извлечении текста из DOCX: {e}")
 
-    return text.strip()
+    text = text.strip()
+    if not text:
+        print("⚠️ Внимание: текст из резюме не был извлечен!")
+
+    return text
 
 def extract_keywords(text, top_n=10):
-    """Извлекает ключевые слова (навыки) из текста, убирая лишние слова."""
-    words = word_tokenize(text.lower())
-    words = [word for word in words if word.isalpha()]  # Убираем числа и знаки
+    """Извлекает ключевые слова (навыки) из текста."""
+    
+    # Регулярное выражение для отбора слов с буквами и дефисами
+    words = re.findall(r'\b[a-zA-Zа-яА-ЯёЁ#\+\-]+\b', text.lower())
 
-    # Чистим список от незначащих слов (стоп-слова)
+    # Загружаем список стоп-слов
     stop_words = set(nltk.corpus.stopwords.words("russian") + nltk.corpus.stopwords.words("english"))
     words = [word for word in words if word not in stop_words]
 
-    vectorizer = TfidfVectorizer(stop_words="english", max_features=top_n)
+    # Проверяем, что есть слова для анализа
+    if len(words) < 3:
+        return set(words)
+
+    # Создаём TF-IDF векторизатор
+    vectorizer = TfidfVectorizer(stop_words=None, max_features=top_n)
     tfidf_matrix = vectorizer.fit_transform([" ".join(words)])
-    
+
     keywords = vectorizer.get_feature_names_out()
     return set(keywords)
 
-def extract_experience(text):
-    """Извлекает количество лет или месяцев опыта работы из текста."""
-    match = re.findall(r"(\d+)\s*(?:год|лет|года|years|year)", text, re.IGNORECASE)
-    months_match = re.findall(r"(\d+)\s*(?:месяц|месяцев|months)", text, re.IGNORECASE)
-
-    years = sum(map(int, match)) if match else 0
-    months = sum(map(int, months_match)) if months_match else 0
-
-    total_experience = (years * 12) + months  # Переводим года в месяцы
-    return total_experience
-
 def analyze_resume(resume_text, vacancy_text):
-    """Анализирует совпадение резюме с вакансией по навыкам и опыту работы."""
+    """Анализируем совпадение резюме с вакансией с помощью BERT."""
 
-    # 1. Извлекаем ключевые слова (навыки) из резюме и вакансии
+    # 🔍 Анализ через ML (BERT)
+    match_percentage = get_similarity(resume_text, vacancy_text)
+    match_percentage = round(match_percentage, 2)  # Округляем до 2 знаков
+
+    # 🔍 Извлекаем ключевые слова (навыки)
     resume_skills = extract_keywords(resume_text)
     vacancy_skills = extract_keywords(vacancy_text)
 
-    print("\n🔍 Анализ навыков")
-    print(f"Извлеченные навыки из резюме: {resume_skills}")
-    print(f"Навыки, требуемые вакансией: {vacancy_skills}")
-
-    # 2. Извлекаем опыт работы
-    resume_experience = extract_experience(resume_text)
-    vacancy_experience = extract_experience(vacancy_text)
-
-    print("\n🕒 Анализ опыта работы")
-    print(f"Опыт кандидата (мес): {resume_experience}")
-    print(f"Требуемый опыт вакансии (мес): {vacancy_experience}")
-
-    # 3. Процент совпадения по навыкам
+    # 🛠 Вычисляем совпадения навыков
     matching_skills = resume_skills.intersection(vacancy_skills)
-    skills_score = (len(matching_skills) / max(len(vacancy_skills), 1)) * 100
+    missing_skills = vacancy_skills - resume_skills
 
-    print("\n✅ Совпадение по навыкам")
-    print(f"Совпадающие навыки: {matching_skills}")
-    print(f"Процент совпадения по навыкам: {skills_score:.2f}%")
+    # 🛠 Проверяем, что в результатах нет ошибок (разделение на буквы)
+    matching_skills = {word for word in matching_skills if len(word) > 1}
+    missing_skills = {word for word in missing_skills if len(word) > 1}
 
-    # 4. Процент совпадения по опыту работы
-    experience_score = (min(resume_experience, vacancy_experience) / max(vacancy_experience, 1)) * 100
+    print("\n🔍 Анализ навыков")
+    print(f"✅ Совпадающие навыки: {', '.join(matching_skills) if matching_skills else 'Нет совпадающих навыков'}")
+    print(f"⚠️ Недостающие навыки: {', '.join(missing_skills) if missing_skills else 'Все навыки совпадают'}")
 
-    print("\n📊 Совпадение по опыту")
-    print(f"Процент совпадения по опыту: {experience_score:.2f}%")
+    print("\n🏆 Итоговый балл (BERT):")
+    print(f"🔍 Совпадение резюме с вакансией: {match_percentage}%")
 
-    # 5. Итоговый балл (вес навыков – 60%, опыт работы – 40%)
-    final_score = (skills_score * 0.6) + (experience_score * 0.4)
-
-    print("\n🏆 Итоговый балл:")
-    print(f"Оценка совпадения резюме с вакансией: {final_score:.2f}%")
-
-    return round(final_score, 2)
-
+    return match_percentage, matching_skills, missing_skills
