@@ -17,11 +17,13 @@ class Vacancy(models.Model):
         return self.title
 
 class CandidateResume(models.Model):
+    name = models.CharField(max_length=255, blank=True, null=True)
     vacancy = models.ForeignKey(Vacancy, on_delete=models.CASCADE)
     resume = models.FileField(upload_to="resumes/")
     match_percentage = models.FloatField(default=0)
     skills = models.TextField(blank=True, null=True)  # 🔍 Извлеченные навыки
     missing_skills = models.TextField(blank=True, null=True)  # ❌ Недостающие навыки
+    gpt_feedback = models.TextField(blank=True, null=True)
     status = models.CharField(
         max_length=15,
         choices=[("pending", "Ожидание"), ("interview", "На интервью"), ("accepted", "Принят"), ("rejected", "Отклонен")],

@@ -29,3 +29,11 @@ class ResumeForm(forms.ModelForm):
     class Meta:
         model = CandidateResume
         fields = ["vacancy", "resume"]
+        labels = {
+            "vacancy": "Вакансия",
+            "resume": "Резюме (PDF или DOCX)"
+        }
+        widgets = {
+            "vacancy": forms.Select(attrs={"class": "form-select"}),
+            "resume": forms.FileInput(attrs={"class": "form-control"})
+        }

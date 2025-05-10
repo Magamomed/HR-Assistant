@@ -1,88 +1,102 @@
+import os
 import re
-import nltk
 import pdfplumber
 import docx
-from nltk.tokenize import word_tokenize
-from sklearn.feature_extraction.text import TfidfVectorizer
-from home.ml_utils import get_similarity  # Импортируем ML-анализ
+import requests
+from dotenv import load_dotenv
 
-# Загружаем необходимые данные
-nltk.download("punkt")
-nltk.download("stopwords")
+load_dotenv()
 
-def extract_text_from_resume(file_path):
-    """Извлекает текст из резюме в формате PDF или DOCX."""
+AZURE_OPENAI_ENDPOINT = "https://openai78997.openai.azure.com"  
+AZURE_DEPLOYMENT_NAME = "gpt-4o" 
+AZURE_API_KEY = os.getenv("AZURE_OPENAI_API_KEY", "b53ca93a2f1a4007af34e896c1604e3c")
+API_VERSION = "2024-02-01"  
+headers = {
+    "Content-Type": "application/json",
+    "api-key": AZURE_API_KEY,
+}
+
+def extract_text_from_file(file):
     text = ""
 
-    if file_path.endswith(".pdf"):
-        try:
-            with pdfplumber.open(file_path) as pdf:
+    try:
+        if file.name.endswith(".pdf"):
+            with pdfplumber.open(file) as pdf:
                 for page in pdf.pages:
-                    extracted_text = page.extract_text()
-                    if extracted_text:
-                        text += extracted_text + "\n"
-        except Exception as e:
-            print(f"❌ Ошибка при извлечении текста из PDF: {e}")
-
-    elif file_path.endswith(".docx"):
-        try:
-            doc = docx.Document(file_path)
+                    extracted = page.extract_text()
+                    if extracted:
+                        text += extracted + "\n"
+        elif file.name.endswith(".docx"):
+            doc = docx.Document(file)
             for para in doc.paragraphs:
                 text += para.text + "\n"
-        except Exception as e:
-            print(f"❌ Ошибка при извлечении текста из DOCX: {e}")
+    except Exception as e:
+        print(f"❌ Ошибка при извлечении текста: {e}")
 
-    text = text.strip()
-    if not text:
-        print("⚠️ Внимание: текст из резюме не был извлечен!")
+    return text.strip()
 
-    return text
 
-def extract_keywords(text, top_n=10):
-    """Извлекает ключевые слова (навыки) из текста."""
-    
-    # Регулярное выражение для отбора слов с буквами и дефисами
-    words = re.findall(r'\b[a-zA-Zа-яА-ЯёЁ#\+\-]+\b', text.lower())
+def analyze_resume(resume_text, job_description):
+    prompt = f"""
+Ты профессиональный HR-ассистент. Ниже предоставлены резюме и описание вакансии.
 
-    # Загружаем список стоп-слов
-    stop_words = set(nltk.corpus.stopwords.words("russian") + nltk.corpus.stopwords.words("english"))
-    words = [word for word in words if word not in stop_words]
+📄 Резюме:
+\"\"\"{resume_text}\"\"\"
 
-    # Проверяем, что есть слова для анализа
-    if len(words) < 3:
-        return set(words)
+📋 Вакансия:
+\"\"\"{job_description}\"\"\"
 
-    # Создаём TF-IDF векторизатор
-    vectorizer = TfidfVectorizer(stop_words=None, max_features=top_n)
-    tfidf_matrix = vectorizer.fit_transform([" ".join(words)])
+🔍 Твоя задача:
+- Проанализируй совпадение навыков.
+- Не завышай процент, если навыков мало.
+- Если совпадают меньше 3 навыков — процент должен быть не выше 40%.
+- Если совпадают 3-4 навыка — процент не должен быть выше 60%.
+- Только при почти полном совпадении ставь больше 80%.
+- Будь строгим: если кандидат backend-разработчик, а вакансия frontend — процент должен быть низким.
 
-    keywords = vectorizer.get_feature_names_out()
-    return set(keywords)
+🔎 Верни строго в формате:
+Процент совпадения: XX%
+Навыки: ...
+Недостающие навыки: ...
+Решение: ...
+"""
 
-def analyze_resume(resume_text, vacancy_text):
-    """Анализируем совпадение резюме с вакансией с помощью BERT."""
+    url = f"{AZURE_OPENAI_ENDPOINT}/openai/deployments/{AZURE_DEPLOYMENT_NAME}/chat/completions?api-version={API_VERSION}"
 
-    # 🔍 Анализ через ML (BERT)
-    match_percentage = get_similarity(resume_text, vacancy_text)
-    match_percentage = round(match_percentage, 2)  # Округляем до 2 знаков
+    data = {
+        "messages": [
+            {"role": "system", "content": "Ты строгий и честный HR-аналитик. Не преувеличивай соответствие кандидатов."},
+            {"role": "user", "content": prompt}
+        ],
+        "temperature": 0,
+        "top_p": 0.0,
+        "max_tokens": 700
+    }
 
-    # 🔍 Извлекаем ключевые слова (навыки)
-    resume_skills = extract_keywords(resume_text)
-    vacancy_skills = extract_keywords(vacancy_text)
+    try:
+        response = requests.post(url, headers=headers, json=data)
+        response.raise_for_status()
+        return response.json()["choices"][0]["message"]["content"]
+    except Exception as e:
+        return f"❌ Ошибка GPT (Azure): {e}"
 
-    # 🛠 Вычисляем совпадения навыков
-    matching_skills = resume_skills.intersection(vacancy_skills)
-    missing_skills = vacancy_skills - resume_skills
 
-    # 🛠 Проверяем, что в результатах нет ошибок (разделение на буквы)
-    matching_skills = {word for word in matching_skills if len(word) > 1}
-    missing_skills = {word for word in missing_skills if len(word) > 1}
+def extract_match_percent_from_text(text):
+    match = re.search(r"(\d{1,3})\s?%", text)
+    return float(match.group(1)) if match else 0.0
 
-    print("\n🔍 Анализ навыков")
-    print(f"✅ Совпадающие навыки: {', '.join(matching_skills) if matching_skills else 'Нет совпадающих навыков'}")
-    print(f"⚠️ Недостающие навыки: {', '.join(missing_skills) if missing_skills else 'Все навыки совпадают'}")
+def extract_matching_skills(text):
+    match = re.search(r"Навыки[:\-]?\s*(.+?)\n", text, re.IGNORECASE)
+    return match.group(1).strip() if match else ""
 
-    print("\n🏆 Итоговый балл (BERT):")
-    print(f"🔍 Совпадение резюме с вакансией: {match_percentage}%")
+def extract_missing_skills(text):
+    match = re.search(r"Недостающие навыки[:\-]?\s*(.+?)(\n|Решение:|$)", text, re.IGNORECASE)
+    return match.group(1).strip() if match else ""
 
-    return match_percentage, matching_skills, missing_skills
+def extract_name(text):
+    lines = text.splitlines()
+    for line in lines:
+        line = line.strip()
+        if line and len(line.split()) >= 2 and not any(x in line.lower() for x in ["резюме", "@", "email", "телефон", "github", "linkedin"]):
+            return line
+    return "Неизвестный кандидат"

@@ -55,7 +55,7 @@
                     <span class="badge bg-danger">Отклонён</span>
                 {% endif %}
             </td>
-            <td>{{ candidate.upload_date|date:"d.m.Y" }}</td>
+            <td>{{ candidate.uploaded_at|date:"d.m.Y" }}</td>
             <td>
                 <a href="{% url 'candidate_detail' candidate.id %}" class="btn btn-sm btn-light">
                     <i class="fas fa-eye"></i> <!-- Глаз (просмотр) -->

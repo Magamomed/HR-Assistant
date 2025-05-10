@@ -11,14 +11,22 @@
     <p><strong>Имя кандидата:</strong> {{ candidate.name }}</p>
     <p><strong>Вакансия:</strong> {{ candidate.vacancy.title }}</p>
     <p><strong>Процент совпадения:</strong> {{ candidate.match_percentage }}%</p>
-    <p><strong>Дата загрузки:</strong> {{ candidate.upload_date|date:"d.m.Y" }}</p>
+    <p><strong>Дата загрузки:</strong> {{ candidate.uploaded_at|date:"d.m.Y" }}</p>
 </div>
 
-<div class="mt-4">
+<!-- <div class="mt-4">
     <h4>Анализ навыков</h4>
     <p><strong>Подходящие навыки:</strong> {{ candidate.matched_skills|join:", " }}</p>
     <p><strong>Недостающие навыки:</strong> {{ candidate.missing_skills|join:", " }}</p>
+</div> -->
+
+<div class="mt-4">
+    <h4>🤖 Ответ от AI-ассистента</h4>
+    <div class="alert alert-info">
+        {{ candidate.gpt_feedback|linebreaks }}
+    </div>
 </div>
+
 
 {% if candidate.status == "pending" %}
     <a href="{% url 'invite_to_interview' candidate.id %}" class="btn btn-primary">Пригласить на интервью</a>

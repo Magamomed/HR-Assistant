@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Vacancy, CandidateResume
 from .forms import VacancyForm , ResumeForm
-from .utils import analyze_resume, extract_text_from_resume , extract_keywords
+from .utils import analyze_resume, extract_text_from_file, analyze_resume , extract_match_percent_from_text,  extract_matching_skills, extract_missing_skills, extract_name
 
 
 
@@ -10,29 +10,22 @@ from .utils import analyze_resume, extract_text_from_resume , extract_keywords
 def dashboard(request):
     """Главная страница со статистикой"""
     vacancies_open = Vacancy.objects.filter(status="open").count()
-    resumes_uploaded = CandidateResume.objects.count()  # Подсчет загруженных резюме
+    resumes_uploaded = CandidateResume.objects.count()
     candidates_accepted = CandidateResume.objects.filter(status="accepted").count()
     candidates_rejected = CandidateResume.objects.filter(status="rejected").count()
 
-    candidates = CandidateResume.objects.all().order_by("-id")  # Последние загруженные резюме
+    candidates = CandidateResume.objects.all().order_by("-id")
 
     context = {
         "vacancies_open": vacancies_open,
         "resumes_uploaded": resumes_uploaded,
         "candidates_accepted": candidates_accepted,
         "candidates_rejected": candidates_rejected,
-        "candidates": [
-            {
-                "name": "Неизвестный кандидат" if not candidate.resume else candidate.resume.name,
-                "position": candidate.vacancy.title,
-                "match": f"{candidate.match_percentage}%",
-                "status": "Принят" if candidate.status == "accepted" else "Отклонён" if candidate.status == "rejected" else "Не рассмотрен",
-                "upload_date": candidate.resume.uploaded_at.strftime("%d.%m.%Y") if hasattr(candidate.resume, "uploaded_at") else "Неизвестно"
-            }
-            for candidate in candidates
-        ]
+        "candidates": candidates 
     }
+
     return render(request, "home/dashboard.html", context)
+
 
 def vacancy_list(request):
     """Страница со списком вакансий"""
@@ -68,7 +61,7 @@ def edit_vacancy(request, pk):
         form = VacancyForm(request.POST, instance=vacancy)
         if form.is_valid():
             vacancy = form.save(commit=False)
-            vacancy.skills = request.POST.get("skills", "")  # Сохраняем навыки как строку через запятую
+            vacancy.skills = request.POST.get("skills", "")  
             vacancy.save()
             return redirect("vacancy_list")
     else:
@@ -87,42 +80,53 @@ def delete_vacancy(request, pk):
 
 def upload_resume(request):
     form = ResumeForm(request.POST or None, request.FILES or None)
-    resume = None 
+    resume = None
     vacancies = Vacancy.objects.all()
 
     if form.is_valid():
         vacancy = form.cleaned_data['vacancy']
         resume_file = form.cleaned_data['resume']
 
-        # Удаляем старое резюме кандидата для этой вакансии
+        
         CandidateResume.objects.filter(vacancy=vacancy).delete()
 
-        # Создаём новое резюме
+        
         resume = form.save()
 
-        # 🔍 Извлекаем текст из резюме
-        resume_text = extract_text_from_resume(resume.resume.path)
-        print(f"📄 Извлеченный текст из резюме:\n{resume_text}")
+        
+        resume_text = extract_text_from_file(resume_file)
+        print(f"📄 Извлеченный текст:\n{resume_text[:500]}...")
 
-        # 🔍 Проверяем описание вакансии
-        vacancy_text = vacancy.description
-        print(f"📋 Описание вакансии:\n{vacancy_text}")
+        
+        job_description = vacancy.description
 
-        # 🛠 Анализируем совпадение через BERT
-        match_percentage, matching_skills, missing_skills = analyze_resume(resume_text, vacancy_text)
+        
+        name = extract_name(resume_text)
+        resume.name = name
 
-        print(f"✅ Совпадение (BERT): {match_percentage}%")
+       
+        if not resume.gpt_feedback:
+            gpt_response = analyze_resume(resume_text, job_description)
+            resume.gpt_feedback = gpt_response
+            print(f"🤖 Ответ GPT:\n{gpt_response}")
 
-        # 💾 Сохраняем процент совпадения и навыки
-        resume.match_percentage = round(match_percentage, 2)
-        resume.skills = ", ".join(matching_skills)
-        resume.missing_skills = ", ".join(list(missing_skills))
+            
+            resume.match_percentage = extract_match_percent_from_text(gpt_response)
+            resume.skills = extract_matching_skills(gpt_response)
+            resume.missing_skills = extract_missing_skills(gpt_response)
+        else:
+            print("✅ Используем сохранённый GPT-анализ")
+
         resume.save()
-
         return redirect("candidates_list")
 
-    return render(request, "home/upload_resume.html", {"form": form, "resume": resume, "vacancies": vacancies})
+    return render(request, "home/upload_resume.html", {
+        "form": form,
+        "resume": resume,
+        "vacancies": vacancies,
+    })
 
+    
 def candidates_list(request):
     candidates = CandidateResume.objects.all()
     vacancies = Vacancy.objects.all()

@@ -38,18 +38,20 @@
         {% for candidate in candidates %}
         <tr>
             <td>{{ candidate.name }}</td>
-            <td>{{ candidate.position }}</td>
-            <td>{{ candidate.match }}</td>
+            <td>{{ candidate.vacancy.title }}</td>
+            <td>{{ candidate.match_percentage }}%</td>
             <td>
-                {% if candidate.status == "Принят" %}
-                    <span class="badge bg-success">{{ candidate.status }}</span>
-                {% elif candidate.status == "Отклонён" %}
-                    <span class="badge bg-danger">{{ candidate.status }}</span>
+                {% if candidate.status == "accepted" %}
+                    <span class="badge bg-success">Принят</span>
+                {% elif candidate.status == "rejected" %}
+                    <span class="badge bg-danger">Отклонён</span>
+                {% elif candidate.status == "interview" %}
+                    <span class="badge bg-primary">На интервью</span>
                 {% else %}
-                    <span class="badge bg-warning text-dark">{{ candidate.status }}</span>
+                    <span class="badge bg-warning text-dark">Ожидание</span>
                 {% endif %}
-            </td>
-            <td>{{ candidate.upload_date }}</td>
+            </td>            
+            <td>{{ candidate.uploaded_at|date:"d.m.Y" }}</td>
         </tr>
         {% endfor %}
     </tbody>
