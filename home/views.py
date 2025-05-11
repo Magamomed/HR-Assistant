@@ -88,8 +88,7 @@ def upload_resume(request):
         resume_file = form.cleaned_data['resume']
 
         
-        CandidateResume.objects.filter(vacancy=vacancy).delete()
-
+        
         
         resume = form.save()
 
