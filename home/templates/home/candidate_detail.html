@@ -4,7 +4,10 @@
 
 {% block content %}
 <h2 class="mb-3">Кандидаты</h2>
-<a href="{% url 'candidates_list' %}" class="btn btn-link"><i class="fas fa-arrow-left"></i> Вернуться назад</a>
+<a href="{% url 'candidates_list' %}" class="btn btn-outline-secondary mb-3">
+  <i class="fas fa-arrow-left me-2"></i> Вернуться назад
+</a>
+
 
 <div class="mt-3">
     <h3>Информация о кандидате</h3>
@@ -14,12 +17,25 @@
     <p><strong>Дата загрузки:</strong> {{ candidate.uploaded_at|date:"d.m.Y" }}</p>
 </div>
 
+
+{% if skills %}
+<div class="mt-4">
+    <h4>🧠 Навыки кандидата</h4>
+    {% for skill in skills %}
+        <span class="badge bg-info me-1">{{ skill|upper }}</span>
+    {% endfor %}
+</div>
+{% endif %}
+
+
+
 <div class="mt-4">
     <h4>🤖 Ответ от AI-ассистента</h4>
     <div class="alert alert-info">
         {{ candidate.gpt_feedback|linebreaks }}
     </div>
 </div>
+
 
 
 {% if candidate.status == "pending" %}

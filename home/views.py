@@ -1,3 +1,4 @@
+import re
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Vacancy, CandidateResume
 from .forms import VacancyForm , ResumeForm
@@ -13,6 +14,9 @@ def dashboard(request):
     resumes_uploaded = CandidateResume.objects.count()
     candidates_accepted = CandidateResume.objects.filter(status="accepted").count()
     candidates_rejected = CandidateResume.objects.filter(status="rejected").count()
+    candidates_total = CandidateResume.objects.count()
+    candidates_interview = candidates_total - candidates_accepted - candidates_rejected
+
 
     candidates = CandidateResume.objects.all().order_by("-id")
 
@@ -21,8 +25,10 @@ def dashboard(request):
         "resumes_uploaded": resumes_uploaded,
         "candidates_accepted": candidates_accepted,
         "candidates_rejected": candidates_rejected,
-        "candidates": candidates 
+        "candidates_interview": candidates_interview,
+        "candidates": candidates
     }
+
 
     return render(request, "home/dashboard.html", context)
 
@@ -86,36 +92,27 @@ def upload_resume(request):
     if form.is_valid():
         vacancy = form.cleaned_data['vacancy']
         resume_file = form.cleaned_data['resume']
-
-        
-        
-        
         resume = form.save()
 
-        
         resume_text = extract_text_from_file(resume_file)
-        print(f"📄 Извлеченный текст:\n{resume_text[:500]}...")
-
-        
         job_description = vacancy.description
+        resume.name = extract_name(resume_text)
 
-        
-        name = extract_name(resume_text)
-        resume.name = name
-
-       
         if not resume.gpt_feedback:
             gpt_response = analyze_resume(resume_text, job_description)
             resume.gpt_feedback = gpt_response
-            print(f"🤖 Ответ GPT:\n{gpt_response}")
-
-            
             resume.match_percentage = extract_match_percent_from_text(gpt_response)
-            resume.skills = extract_matching_skills(gpt_response)
             resume.missing_skills = extract_missing_skills(gpt_response)
-        else:
-            print("✅ Используем сохранённый GPT-анализ")
 
+            required_skills = set(skill.strip().lower() for skill in vacancy.skills.split(",") if skill.strip())
+            extracted_skills = set()
+            resume_text_lower = resume_text.lower()
+
+            for skill in required_skills:
+                if re.search(rf'\b{re.escape(skill)}\b', resume_text_lower):
+                    extracted_skills.add(skill)
+
+            resume.skills = ", ".join(sorted(extracted_skills))
         resume.save()
         return redirect("candidates_list")
 
@@ -133,16 +130,15 @@ def candidates_list(request):
 
 def candidate_detail(request, candidate_id):
     candidate = get_object_or_404(CandidateResume, id=candidate_id)
-
-    # Проверяем, есть ли сохранённые навыки
-    candidate_skills = set(candidate.skills.split(", ")) if candidate.skills else set()
+    skills = candidate.skills.split(", ") if candidate.skills else []
     missing_skills = set(candidate.missing_skills.split(", ")) if candidate.missing_skills else set()
 
     return render(request, "home/candidate_detail.html", {
         "candidate": candidate,
-        "matching_skills": candidate_skills,
+        "skills": skills,
         "missing_skills": missing_skills,
     })
+
 
 def invite_to_interview(request, candidate_id):
     candidate = get_object_or_404(CandidateResume, id=candidate_id)

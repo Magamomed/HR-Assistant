@@ -6,7 +6,6 @@
 <h2 class="mb-3">Кандидаты</h2>
 <p>Здесь вы можете просмотреть всех кандидатов, их статус и процент совпадения с вакансией.</p>
 
-<!-- Фильтры поиска -->
 <div class="mb-3 d-flex">
     <input type="text" class="form-control me-2" placeholder="Поиск кандидата">
     <select class="form-select me-2">
@@ -58,10 +57,10 @@
             <td>{{ candidate.uploaded_at|date:"d.m.Y" }}</td>
             <td>
                 <a href="{% url 'candidate_detail' candidate.id %}" class="btn btn-sm btn-light">
-                    <i class="fas fa-eye"></i> <!-- Глаз (просмотр) -->
+                    <i class="fas fa-eye"></i> 
                 </a>
                 <a href="{% url 'delete_candidate' candidate.id %}" class="btn btn-sm btn-danger">
-                    <i class="fas fa-trash"></i> <!-- Мусорка (удаление) -->
+                    <i class="fas fa-trash"></i> 
                 </a>
             </td>            
         </tr>

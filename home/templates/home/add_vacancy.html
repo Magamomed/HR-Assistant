@@ -31,7 +31,6 @@
         <div id="skills-container" class="mt-2"></div>
     </div>
 
-    <!-- Скрытое поле для передачи навыков в форму -->
     <input type="hidden" name="skills" id="hidden-skills" value="{{ form.instance.skills }}">
 
     <div class="mb-3">
@@ -63,7 +62,7 @@
 
     function updateSkillsDisplay() {
         let skillContainer = document.getElementById("skills-container");
-        skillContainer.innerHTML = "";  // Очищаем контейнер перед обновлением
+        skillContainer.innerHTML = "";  
 
         skillsArray.forEach((skill, index) => {
             let newSkill = document.createElement("span");
@@ -72,7 +71,6 @@
             skillContainer.appendChild(newSkill);
         });
 
-        // Записываем список навыков в скрытое поле
         document.getElementById("hidden-skills").value = skillsArray.join(",");
     }
 
@@ -85,7 +83,6 @@
         document.getElementById("hidden-skills").value = skillsArray.join(",");
     }
 
-    // 🟢 Автоматически загружаем навыки при редактировании
     window.onload = function () {
         let existingSkills = "{{ form.instance.skills|default_if_none:'' }}";
         if (existingSkills) {

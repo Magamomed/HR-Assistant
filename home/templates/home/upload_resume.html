@@ -5,13 +5,12 @@
 <h2 class="mb-3">Загрузка резюме</h2>
 <p>Выберите вакансию и загрузите резюме кандидата в формате PDF/DOCX</p>
 
-<!-- Форма загрузки резюме -->
 <form method="POST" enctype="multipart/form-data" class="mb-4">
     {% csrf_token %}
 
     <div class="mb-3">
         <label for="vacancy">Вакансия:</label>
-        <select name="vacancy" class="form-control">
+        <select name="vacancy" class="form-control" required>
             <option value="">Выберите вакансию</option>
             {% for vacancy in vacancies %}
             <option value="{{ vacancy.id }}">{{ vacancy.title }}</option>
@@ -27,7 +26,6 @@
     <button type="submit" class="btn text-white" style="background-color: #2D6490;">Анализировать резюме</button>
 </form>
 
-<!-- Блок анализа резюме (скрыт до загрузки) -->
 <div id="analysis-result" class="mt-4 d-none">
     <h4>Результат анализа</h4>
     <p><strong>Процент совпадения:</strong> <span id="match-percentage">0%</span></p>
