@@ -7,7 +7,6 @@ from .utils import analyze_resume, extract_text_from_file, extract_match_percent
 
 
 
-
 def dashboard(request):
     vacancies_open = Vacancy.objects.filter(status="open").count()
     resumes_uploaded = CandidateResume.objects.count()
@@ -121,11 +120,29 @@ def upload_resume(request):
         "vacancies": vacancies,
     })
 
-    
 def candidates_list(request):
-    candidates = CandidateResume.objects.all()
+    qs = CandidateResume.objects.select_related("vacancy").all()
+
+    q = request.GET.get("q", "").strip()
+    if q:
+        qs = qs.filter(name__icontains=q)
+
+    status = request.GET.get("status")
+    if status:
+        qs = qs.filter(status=status)
+
+    vacancy_id = request.GET.get("vacancy")
+    if vacancy_id:
+        qs = qs.filter(vacancy_id=vacancy_id)
+
+    qs = qs.order_by("-uploaded_at")
+
     vacancies = Vacancy.objects.all()
-    return render(request, "home/candidates_list.html", {"candidates": candidates, "vacancies": vacancies})
+    return render(
+        request,
+        "home/candidates_list.html",
+        {"candidates": qs, "vacancies": vacancies},
+    )
 
 def candidate_detail(request, candidate_id):
     candidate = get_object_or_404(CandidateResume, id=candidate_id)
