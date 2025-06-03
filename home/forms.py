@@ -14,7 +14,7 @@ class VacancyForm(forms.ModelForm):
         labels = {
             "title": "Название вакансии",
             "description": "Описание вакансии",
-            "experience": "Опыт работы (в месяцах)",
+            "experience": "Опыт работы (в годах)",
             "status": "Статус вакансии",
         }
         widgets = {
@@ -23,6 +23,10 @@ class VacancyForm(forms.ModelForm):
             "experience": forms.NumberInput(attrs={"class": "form-control", "min": 0}),
             "status": forms.Select(attrs={"class": "form-select"}),
         }
+        
+    def clean_experience(self):
+        years = self.cleaned_data['experience']
+        return years * 12 
 
 
 class ResumeForm(forms.ModelForm):
@@ -37,3 +41,5 @@ class ResumeForm(forms.ModelForm):
             "vacancy": forms.Select(attrs={"class": "form-select"}),
             "resume": forms.FileInput(attrs={"class": "form-control"})
         }
+
+

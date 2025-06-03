@@ -31,7 +31,7 @@ def extract_text_from_file(file):
             for para in doc.paragraphs:
                 text += para.text + "\n"
     except Exception as e:
-        print(f"❌ Ошибка при извлечении текста: {e}")
+        print(f"Ошибка при извлечении текста: {e}")
 
     return text.strip()
 
@@ -68,7 +68,7 @@ def analyze_resume(resume_text, job_description):
             {"role": "user", "content": prompt}
         ],
         "temperature": 0,
-        "top_p": 0.0,
+        "top_p": 1.0,
         "max_tokens": 700
     }
 
@@ -77,7 +77,7 @@ def analyze_resume(resume_text, job_description):
         response.raise_for_status()
         return response.json()["choices"][0]["message"]["content"]
     except Exception as e:
-        return f"❌ Ошибка GPT (Azure): {e}"
+        return f"Ошибка GPT (Azure): {e}"
 
 
 def extract_match_percent_from_text(text):

@@ -2,14 +2,13 @@ import re
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Vacancy, CandidateResume
 from .forms import VacancyForm , ResumeForm
-from .utils import analyze_resume, extract_text_from_file, analyze_resume , extract_match_percent_from_text,  extract_matching_skills, extract_missing_skills, extract_name
+from .utils import analyze_resume, extract_text_from_file, extract_match_percent_from_text,  extract_matching_skills, extract_missing_skills, extract_name
 
 
 
 
 
 def dashboard(request):
-    """Главная страница со статистикой"""
     vacancies_open = Vacancy.objects.filter(status="open").count()
     resumes_uploaded = CandidateResume.objects.count()
     candidates_accepted = CandidateResume.objects.filter(status="accepted").count()
@@ -34,7 +33,7 @@ def dashboard(request):
 
 
 def vacancy_list(request):
-    """Страница со списком вакансий"""
+    
     status_filter = request.GET.get("status", "all")
 
     if status_filter == "open":
@@ -48,7 +47,7 @@ def vacancy_list(request):
 
 
 def add_vacancy(request):
-    """Добавление новой вакансии"""
+    
     if request.method == "POST":
         form = VacancyForm(request.POST)
         if form.is_valid():
@@ -77,7 +76,7 @@ def edit_vacancy(request, pk):
 
 
 def delete_vacancy(request, pk):
-    """Удаление вакансии"""
+    
     vacancy = get_object_or_404(Vacancy, pk=pk)
     vacancy.delete()
     return redirect("vacancy_list")
