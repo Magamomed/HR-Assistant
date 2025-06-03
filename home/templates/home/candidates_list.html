@@ -6,22 +6,37 @@
 <h2 class="mb-3">Кандидаты</h2>
 <p>Здесь вы можете просмотреть всех кандидатов, их статус и процент совпадения с вакансией.</p>
 
-<div class="mb-3 d-flex">
-    <input type="text" class="form-control me-2" placeholder="Поиск кандидата">
-    <select class="form-select me-2">
-        <option selected>Все статусы</option>
-        <option value="pending">Ожидание</option>
-        <option value="interview">На интервью</option>
-        <option value="accepted">Принят</option>
-        <option value="rejected">Отклонён</option>
+<form method="get" class="d-flex flex-nowrap gap-2 mb-3">
+    <input type="text"
+           class="form-control"
+           name="q"
+           value="{{ request.GET.q }}"
+           placeholder="Поиск кандидата">
+
+    <select class="form-select"
+            name="status">
+        <option value="" {% if not request.GET.status %}selected{% endif %}>Все статусы</option>
+        <option value="pending"   {% if request.GET.status == 'pending'   %}selected{% endif %}>Ожидание</option>
+        <option value="interview" {% if request.GET.status == 'interview' %}selected{% endif %}>На интервью</option>
+        <option value="accepted"  {% if request.GET.status == 'accepted'  %}selected{% endif %}>Принят</option>
+        <option value="rejected"  {% if request.GET.status == 'rejected'  %}selected{% endif %}>Отклонён</option>
     </select>
-    <select class="form-select">
-        <option selected>Выберите вакансию</option>
+
+    <select class="form-select"
+            name="vacancy">
+        <option value="" {% if not request.GET.vacancy %}selected{% endif %}>Все вакансии</option>
         {% for vacancy in vacancies %}
-            <option value="{{ vacancy.id }}">{{ vacancy.title }}</option>
+            <option value="{{ vacancy.id }}"
+                    {% if request.GET.vacancy|stringformat:"s" == vacancy.id|stringformat:"s" %}selected{% endif %}>
+                {{ vacancy.title }}
+            </option>
         {% endfor %}
     </select>
-</div>
+
+    <button type="submit" class="btn btn-primary">Применить</button>
+</form>
+
+
 
 {% if candidates %}
 <table class="table table-striped">
