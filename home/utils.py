@@ -7,14 +7,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-AZURE_OPENAI_ENDPOINT = "https://openai78997.openai.azure.com"  
-AZURE_DEPLOYMENT_NAME = "gpt-4o" 
-AZURE_API_KEY = os.getenv("AZURE_OPENAI_API_KEY", "b53ca93a2f1a4007af34e896c1604e3c")
-API_VERSION = "2024-02-01"  
-headers = {
-    "Content-Type": "application/json",
-    "api-key": AZURE_API_KEY,
-}
 
 def extract_text_from_file(file):
     text = ""
